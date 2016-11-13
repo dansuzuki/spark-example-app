@@ -5,22 +5,20 @@ import org.apache.spark._
 
 object WordCount extends App {
 
-
     val conf = new SparkConf
     conf.setAppName("Word Count").setMaster("local[*]")
 
     val sc = new SparkContext(conf)
-
-    val textData: List[String] = (1 to 10000).toList.map(n => {
-      "the quick brown fox jumps over the lazy dog"
-    })
-
-    val rdd = sc.parallelize(textData)
+    val started = System.currentTimeMillis
+    val rdd = sc.textFile(args(0))
     rdd.flatMap(line => line.split("\\s+"))
       .map(word => (word, 1))
       .reduceByKey(_ + _)
-      .collect
-      .foreach(println)
+      .map(kv => (kv._1 + "\t" + kv._2))
+      .repartition(1)
+      .saveAsTextFile(args(1))
+    val finished = System.currentTimeMillis
 
     sc.stop
+    println("Time taken: " + (finished - started))
 }
